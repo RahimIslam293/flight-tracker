@@ -1,1 +1,5 @@
 #This file will need to use the DataManager,FlightSearch, FlightData, NotificationManager classes to achieve the program requirements.
+import requests
+import dotenv
+import os
+dotenv.load_dotenv()
