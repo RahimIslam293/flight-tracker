@@ -2,6 +2,7 @@ import requests
 from pprint import pprint
 import dotenv
 import os
+import flight_search
 
 dotenv.load_dotenv()
 
@@ -19,12 +20,11 @@ class DataManager:
         resp.raise_for_status()
         self.data_holder = resp.json()
 
-    def update_iata_code(self, city_name, iata_code) -> bool:
-        updated = False
-        if len(self.data_holder) == 0:
-            self.load_data()
-        for city_data in self.data_holder["prices"]:
-            if city_data["city"].title() == city_name.title():
-                city_data["iataCode"] = iata_code.upper()
-                updated = True
-        return updated
+    def update_sheety(self):
+        for city_airports in self.data_holder["prices"]:
+            update_endpoint = f"{self.endpoint}/{city_airports["id"]}"
+            updated_set = {
+                "price": city_airports
+            }
+            resp = requests.put(url=update_endpoint, json=updated_set, headers=self.headers)
+            print(resp.json())

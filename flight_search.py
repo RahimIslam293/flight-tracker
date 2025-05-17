@@ -56,6 +56,9 @@ class FlightSearch:
             else:
                 print(f"An HTTP error occurred: {e}")
         else:
-            iata_code = payload["data"][0]["iataCode"]
+            if payload["meta"]["count"] != 0:
+                iata_code = payload["data"][0]["iataCode"]
+            else:
+                iata_code = "NOT FOUND"
 
         return iata_code
