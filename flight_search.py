@@ -1,7 +1,10 @@
+import time
+
 import requests
 from pprint import pprint
 import dotenv
 import os
+import datetime as dt
 
 dotenv.load_dotenv()
 
@@ -10,10 +13,12 @@ class FlightSearch:
     # This class is responsible for talking to the Flight Search API.
     def __init__(self):
         self.api_locations_endpoint = "https://test.api.amadeus.com/v1/reference-data/locations"
+        self.api_flight_offers_endpoint = "https://test.api.amadeus.com/v2/shopping/flight-offers"
         self.api_token_endpoint = "https://test.api.amadeus.com/v1/security/oauth2/token"
         self.api_key = os.getenv("AMADEUS_API_KEY")
         self.api_secret = os.getenv("AMADEUS_APP_SECRET")
         self.oath_token = os.getenv("AMADEUS_OATH_BEARER_TOKEN")
+        self.current_iata_location_code = "RDU"
 
     def refresh_token(self):
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -45,6 +50,7 @@ class FlightSearch:
         iata_code = ""
         try:
             resp = requests.get(url=self.api_locations_endpoint, headers=headers, params=parameters)
+            time.sleep(2)
             payload = resp.json()
             resp.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -62,3 +68,32 @@ class FlightSearch:
                 iata_code = "NOT FOUND"
 
         return iata_code
+
+    def search_for_flights(self, destination_code,departure_date, return_date, adults, currency_code):
+        headers = {"Authorization": f"Bearer {self.oath_token}"}
+        body = {
+            "originLocationCode": self.current_iata_location_code,
+            "destinationLocationCode": destination_code,
+            "departureDate": departure_date,
+            "returnDate": return_date,
+            "nonStop": "true",
+            "max": 10,
+            "adults": adults,
+            "currencyCode": currency_code
+        }
+        payload = None
+        try:
+            resp = requests.get(url=self.api_flight_offers_endpoint, headers=headers, params=body)
+            time.sleep(2)
+            payload = resp.json()
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                print("Token Expired: Running get_token()")
+                self.refresh_token()
+                print("Token Updated")
+                return self.search_for_flights(destination_code,departure_date,adults,currency_code)
+            else:
+                print(f"An HTTP error occurred: {e}")
+
+        return payload
